@@ -1,0 +1,1345 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/isaiahakinwumiju-web/-VAWT-WIND-TURBINE-CODE/blob/main/UoM_AlgoSoc_Week2_Python_Primer.ipynb%20(%20masterclass)\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "4098bf61",
+      "metadata": {
+        "id": "4098bf61"
+      },
+      "source": [
+        "# UoM AlgoSoc | Week 2: Python primer\n",
+        "\n",
+        "**Session:** Core\n",
+        "**Date:** Friday 9 October 2026\n",
+        "\n",
+        "This notebook is the hands-on part of the session. It is beginner friendly: you do not need to install anything, and you do not need to know Python before you start."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "cbbce621",
+      "metadata": {
+        "id": "cbbce621"
+      },
+      "source": [
+        "## How to use this notebook\n",
+        "\n",
+        "1. **Make your own copy.** Go to **File > Save a copy in Drive**. Your copy is the one you edit.\n",
+        "2. **Run a cell** by clicking it and pressing **Shift + Enter**, or by clicking the play button on its left.\n",
+        "3. **Run the cells in order, from the top.** Later cells use results from earlier ones.\n",
+        "4. **Exercises have a blank to fill in.** Replace `None` with your own code, run the cell, and read the message underneath. A green tick means it is correct.\n",
+        "5. **Stuck?** Open the **Hint** under the exercise first. The **Solution** cells are hidden, so try the exercise before you open one.\n",
+        "6. **Something broke?** Go to **Runtime > Restart session and run all** to start again from a clean state.\n",
+        "\n",
+        "You cannot break anything. If a cell shows a red error, read the last line: it tells you what went wrong."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "0d946bd2",
+      "metadata": {
+        "id": "0d946bd2"
+      },
+      "source": [
+        "## What you will do today\n",
+        "\n",
+        "By the end of this notebook you will be able to:\n",
+        "\n",
+        "- store values in variables and tell their types apart\n",
+        "- hold prices in a list and look values up in a dictionary\n",
+        "- repeat a step with a loop and make decisions with `if`\n",
+        "- write a function and import a library\n",
+        "- load a price series from a CSV file and compute its daily returns\n",
+        "\n",
+        "**Time:** about 3 hours in total. Sections 1 to 4 fit the supported working time; finish the rest in your own time before Week 3. The self-check at the end tells you whether you are ready."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "c287aca5",
+      "metadata": {
+        "id": "c287aca5"
+      },
+      "outputs": [],
+      "source": [
+        "# Step 0: Setup. Run this cell first. It loads the tools we use.\n",
+        "import numpy as np\n",
+        "import pandas as pd\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "plt.rcParams[\"figure.figsize\"] = (10, 4)\n",
+        "plt.rcParams[\"axes.grid\"] = True\n",
+        "\n",
+        "def check(label, passed, hint=\"\"):\n",
+        "    # Prints a friendly message when you run an exercise.\n",
+        "    if passed:\n",
+        "        print(f\"✅ {label}: correct. Well done.\")\n",
+        "    else:\n",
+        "        print(f\"❌ {label}: not yet. {hint}\")\n",
+        "\n",
+        "print(\"Setup complete. You are ready to go.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "ecc6b66e",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ecc6b66e",
+        "outputId": "1eece3cc-17e3-4208-b12b-99d8c5d652a9"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "✅ week2_prices.csv\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Step 1: Get the data. Run this cell. No need to change it.\n",
+        "# Committee: before sharing the notebook, paste each file's Google Drive sharing link below.\n",
+        "DATA_FILES = {\n",
+        "    \"week2_prices.csv\": \"https://drive.google.com/file/d/123yHNuG1l4wuGx7qnHCjAFGqSJ8Uhhvj/view?usp=sharing\",\n",
+        "}\n",
+        "\n",
+        "import os, re, urllib.request\n",
+        "\n",
+        "def _direct_link(link):\n",
+        "    # Turns a Drive sharing link into a direct download link.\n",
+        "    m = re.search(r\"/d/([\\w-]+)\", link) or re.search(r\"id=([\\w-]+)\", link)\n",
+        "    return f\"https://drive.google.com/uc?export=download&id={m.group(1)}\" if m else link\n",
+        "\n",
+        "for name, link in DATA_FILES.items():\n",
+        "    if not os.path.exists(name):\n",
+        "        try:\n",
+        "            urllib.request.urlretrieve(_direct_link(link), name)\n",
+        "            with open(name) as f:\n",
+        "                if f.read(1) == \"<\":      # Drive sent a web page, not the file\n",
+        "                    os.remove(name)\n",
+        "        except Exception:\n",
+        "            if os.path.exists(name):\n",
+        "                os.remove(name)\n",
+        "    if not os.path.exists(name):\n",
+        "        try:\n",
+        "            from google.colab import files\n",
+        "            print(f\"Could not download {name}. Click Choose Files and pick it from your computer.\")\n",
+        "            files.upload()\n",
+        "        except ImportError:\n",
+        "            print(f\"Put {name} in the same folder as this notebook.\")\n",
+        "    print(\"✅\" if os.path.exists(name) else \"❌\", name)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "29b63002",
+      "metadata": {
+        "id": "29b63002"
+      },
+      "source": [
+        "## 1. Colab and variables\n",
+        "\n",
+        "A **cell** is a box of code. Running it sends the code to Python and shows the result underneath. The last line of a cell is printed automatically; use `print()` for anything earlier.\n",
+        "\n",
+        "A **variable** is a name for a value. The `=` sign stores the value on the right under the name on the left.\n",
+        "\n",
+        "Every value has a **type**:\n",
+        "\n",
+        "| Type | Example | What it holds |\n",
+        "| --- | --- | --- |\n",
+        "| `int` | `252` | A whole number |\n",
+        "| `float` | `101.5` | A number with a decimal point |\n",
+        "| `str` | `\"AAPL\"` | Text, written in quotes |\n",
+        "| `bool` | `True` | `True` or `False` |\n",
+        "\n",
+        "Read the worked example, run it, then look at the output."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "380c1d57",
+      "metadata": {
+        "id": "380c1d57"
+      },
+      "outputs": [],
+      "source": [
+        "# Worked example: variables and types.\n",
+        "ticker = \"AAPL\"\n",
+        "price = 101.5\n",
+        "trading_days = 252\n",
+        "is_open = True\n",
+        "\n",
+        "print(ticker, price, trading_days, is_open)\n",
+        "print(type(ticker), type(price), type(trading_days), type(is_open))\n",
+        "\n",
+        "# Arithmetic works as on a calculator: + - * / and ** for powers.\n",
+        "print(\"Price after a 2 per cent rise:\", price * 1.02)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "cf313aba",
+      "metadata": {
+        "id": "cf313aba"
+      },
+      "source": [
+        "### Exercise 1: Your first return\n",
+        "\n",
+        "A share closed at £100 yesterday and £103 today. The **simple return** is today's price divided by yesterday's price, minus 1.\n",
+        "\n",
+        "Store yesterday's price in `price_yesterday`, today's price in `price_today`, and the return in `ret`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "`ret = price_today / price_yesterday - 1`. The answer should be 0.03, which is 3 per cent.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "7db87bcc",
+      "metadata": {
+        "id": "7db87bcc"
+      },
+      "outputs": [],
+      "source": [
+        "# Exercise 1: replace None with your code.\n",
+        "price_yesterday = None\n",
+        "price_today = None\n",
+        "ret = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "if ret is None:\n",
+        "    check(\"Exercise 1\", False, \"The blank is still None. Replace it with your code.\")\n",
+        "else:\n",
+        "    check(\"Exercise 1\", abs(ret - 0.03) < 1e-9, \"Divide today by yesterday, then subtract 1.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "19faf917",
+      "metadata": {
+        "cellView": "form",
+        "id": "19faf917"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution 1 (try the exercise first)\n",
+        "price_yesterday = 100\n",
+        "price_today = 103\n",
+        "ret = price_today / price_yesterday - 1\n",
+        "ret"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "8d55099e",
+      "metadata": {
+        "id": "8d55099e"
+      },
+      "source": [
+        "## 2. Lists and dictionaries\n",
+        "\n",
+        "A **list** holds values in order, inside square brackets. Python counts positions from **0**, so `prices[0]` is the first item. `prices[-1]` is the last item, and `len(prices)` is the number of items.\n",
+        "\n",
+        "A **dictionary** looks values up by a name, called a **key**. It is written with curly brackets and colons."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "7a4cb749",
+      "metadata": {
+        "id": "7a4cb749"
+      },
+      "outputs": [],
+      "source": [
+        "# Worked example: a list and a dictionary.\n",
+        "prices = [100, 101, 99.99, 102.01]\n",
+        "print(\"First price:\", prices[0])\n",
+        "print(\"Second price:\", prices[1])\n",
+        "print(\"Last price:\", prices[-1])\n",
+        "print(\"Number of prices:\", len(prices))\n",
+        "\n",
+        "holdings = {\"AAPL\": 10, \"MSFT\": 5, \"TSLA\": 2}\n",
+        "print(\"Shares of MSFT:\", holdings[\"MSFT\"])\n",
+        "\n",
+        "holdings[\"NVDA\"] = 3          # add a new key\n",
+        "print(holdings)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "8b279d92",
+      "metadata": {
+        "id": "8b279d92"
+      },
+      "source": [
+        "### Exercise 2: Index a list and a dictionary\n",
+        "\n",
+        "Using the `prices` list and `holdings` dictionary from the worked example:\n",
+        "\n",
+        "- store the **third** price in `third_price`\n",
+        "- store the number of **TSLA** shares in `tsla_shares`\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "The third item sits at index 2. A dictionary value comes from `holdings[\"key\"]`.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "4d5a03b2",
+      "metadata": {
+        "id": "4d5a03b2"
+      },
+      "outputs": [],
+      "source": [
+        "# Exercise 2: replace None with your code.\n",
+        "third_price = None\n",
+        "tsla_shares = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "if third_price is None or tsla_shares is None:\n",
+        "    check(\"Exercise 2\", False, \"Replace both blanks.\")\n",
+        "else:\n",
+        "    check(\"Exercise 2\", third_price == 99.99 and tsla_shares == 2,\n",
+        "          \"Python counts from 0, so the third item is prices[2].\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "90c7985d",
+      "metadata": {
+        "cellView": "form",
+        "id": "90c7985d"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution 2 (try the exercise first)\n",
+        "third_price = prices[2]\n",
+        "tsla_shares = holdings[\"TSLA\"]\n",
+        "third_price, tsla_shares"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "465e32c8",
+      "metadata": {
+        "id": "465e32c8"
+      },
+      "source": [
+        "## 3. Loops and conditionals\n",
+        "\n",
+        "A **for loop** repeats a step for each item. The lines that belong to the loop are **indented** by four spaces.\n",
+        "\n",
+        "`range(1, len(prices))` gives the positions 1, 2, and 3. The loop starts at 1, since the first day has no previous price to compare with.\n",
+        "\n",
+        "An **if statement** runs a block of code only when a condition is `True`. `elif` and `else` handle the other cases."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "f73cbcaa",
+      "metadata": {
+        "id": "f73cbcaa"
+      },
+      "outputs": [],
+      "source": [
+        "# Worked example: a loop that prints each daily return.\n",
+        "prices = [100, 101, 99.99, 102.01]\n",
+        "for i in range(1, len(prices)):\n",
+        "    r = prices[i] / prices[i - 1] - 1\n",
+        "    if r > 0:\n",
+        "        print(f\"Day {i}: {r:.4f}, up\")\n",
+        "    elif r < 0:\n",
+        "        print(f\"Day {i}: {r:.4f}, down\")\n",
+        "    else:\n",
+        "        print(f\"Day {i}: {r:.4f}, flat\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "fae748d7",
+      "metadata": {
+        "id": "fae748d7"
+      },
+      "source": [
+        "`f\"...\"` is an **f-string**: Python fills in anything inside `{ }`. `{r:.4f}` shows `r` to 4 decimal places.\n",
+        "\n",
+        "You may see results such as `0.010000000000000009`. That is 0.01: computers store decimals in binary, which adds tiny rounding errors."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "85e9592a",
+      "metadata": {
+        "id": "85e9592a"
+      },
+      "source": [
+        "### Exercise 3: Build a list of returns with a loop\n",
+        "\n",
+        "Start from an empty list, `returns_list = []`. Loop over the positions of `prices` from 1 to the end, compute each return, and add it to the list with `returns_list.append(r)`.\n",
+        "\n",
+        "Then count how many returns are **above zero** and store the count in `up_days`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "```python\n",
+        "returns_list = []\n",
+        "for i in range(1, len(prices)):\n",
+        "    r = prices[i] / prices[i - 1] - 1\n",
+        "    returns_list.append(r)\n",
+        "```\n",
+        "For `up_days`, start a counter at 0 and add 1 inside an `if r > 0:` block.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "f775fdbb",
+      "metadata": {
+        "id": "f775fdbb"
+      },
+      "outputs": [],
+      "source": [
+        "# Exercise 3: replace None with your code.\n",
+        "returns_list = None\n",
+        "up_days = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "_target = [prices[i] / prices[i - 1] - 1 for i in range(1, len(prices))]\n",
+        "if returns_list is None or up_days is None:\n",
+        "    check(\"Exercise 3\", False, \"Replace both blanks.\")\n",
+        "else:\n",
+        "    check(\"Exercise 3\", np.allclose(returns_list, _target) and up_days == 2,\n",
+        "          \"You should have 3 returns, and 2 of them are above zero.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "cf6da2b4",
+      "metadata": {
+        "cellView": "form",
+        "id": "cf6da2b4"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution 3 (try the exercise first)\n",
+        "returns_list = []\n",
+        "up_days = 0\n",
+        "for i in range(1, len(prices)):\n",
+        "    r = prices[i] / prices[i - 1] - 1\n",
+        "    returns_list.append(r)\n",
+        "    if r > 0:\n",
+        "        up_days = up_days + 1\n",
+        "returns_list, up_days"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "3e473301",
+      "metadata": {
+        "id": "3e473301"
+      },
+      "source": [
+        "## 4. Functions\n",
+        "\n",
+        "A **function** packages steps under one name, so you can reuse them. `def` starts the function, the names in brackets are its **inputs**, and `return` sends the answer back."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "f13272bf",
+      "metadata": {
+        "id": "f13272bf"
+      },
+      "outputs": [],
+      "source": [
+        "# Worked example: a function that converts a return to a percentage string.\n",
+        "def as_percent(r):\n",
+        "    return f\"{r * 100:.2f}%\"\n",
+        "\n",
+        "print(as_percent(0.03))\n",
+        "print(as_percent(-0.0125))"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "d241dad5",
+      "metadata": {
+        "id": "d241dad5"
+      },
+      "source": [
+        "### Exercise 4: Write `simple_return`\n",
+        "\n",
+        "Write a function `simple_return(today, yesterday)` that returns `today / yesterday - 1`.\n",
+        "\n",
+        "Replace the line `simple_return = None` with your `def` block.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "```python\n",
+        "def simple_return(today, yesterday):\n",
+        "    return today / yesterday - 1\n",
+        "```\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "8ef3f85e",
+      "metadata": {
+        "id": "8ef3f85e"
+      },
+      "outputs": [],
+      "source": [
+        "# Exercise 4: replace None with your code.\n",
+        "simple_return = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "if simple_return is None:\n",
+        "    check(\"Exercise 4\", False, \"Replace the blank with a def block.\")\n",
+        "else:\n",
+        "    check(\"Exercise 4\", abs(simple_return(103, 100) - 0.03) < 1e-9\n",
+        "          and abs(simple_return(99, 100) + 0.01) < 1e-9,\n",
+        "          \"Check the order: today divided by yesterday, minus 1.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "2bb98e47",
+      "metadata": {
+        "cellView": "form",
+        "id": "2bb98e47"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution 4 (try the exercise first)\n",
+        "def simple_return(today, yesterday):\n",
+        "    return today / yesterday - 1\n",
+        "simple_return(103, 100)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "b9a58fce",
+      "metadata": {
+        "id": "b9a58fce"
+      },
+      "source": [
+        "## 5. Importing a library\n",
+        "\n",
+        "A **library** is code someone else wrote that you can use. `import` loads it, and `as` gives it a short name.\n",
+        "\n",
+        "- `math` holds maths functions such as `math.sqrt`.\n",
+        "- `numpy`, imported as `np`, works on whole arrays of numbers at once.\n",
+        "- `pandas`, imported as `pd`, works with tables of data.\n",
+        "\n",
+        "The setup cell already imported `numpy` and `pandas`."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "8977d3af",
+      "metadata": {
+        "id": "8977d3af"
+      },
+      "outputs": [],
+      "source": [
+        "# Worked example: square roots and averages.\n",
+        "import math\n",
+        "print(\"Square root of 252:\", math.sqrt(252))\n",
+        "print(\"Average of the prices:\", np.mean([100, 101, 99.99, 102.01]))"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "cbbecfab",
+      "metadata": {
+        "id": "cbbecfab"
+      },
+      "source": [
+        "### Exercise 5: Annualise a volatility\n",
+        "\n",
+        "Daily volatility scales to a yearly figure when multiplied by the square root of 252, the number of trading days in a year.\n",
+        "\n",
+        "A stock has a daily volatility of 0.01. Store its annual volatility in `annual_vol`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "`annual_vol = 0.01 * math.sqrt(252)`. The answer is about 0.159, or 15.9 per cent.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "5b1b6572",
+      "metadata": {
+        "id": "5b1b6572"
+      },
+      "outputs": [],
+      "source": [
+        "# Exercise 5: replace None with your code.\n",
+        "annual_vol = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "if annual_vol is None:\n",
+        "    check(\"Exercise 5\", False, \"Replace the blank with your code.\")\n",
+        "else:\n",
+        "    check(\"Exercise 5\", abs(annual_vol - 0.01 * 252 ** 0.5) < 1e-9,\n",
+        "          \"Multiply 0.01 by math.sqrt(252).\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "b5376ffa",
+      "metadata": {
+        "cellView": "form",
+        "id": "b5376ffa"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution 5 (try the exercise first)\n",
+        "annual_vol = 0.01 * math.sqrt(252)\n",
+        "annual_vol"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "eaf5e137",
+      "metadata": {
+        "id": "eaf5e137"
+      },
+      "source": [
+        "## 6. Loading a price series\n",
+        "\n",
+        "`week2_prices.csv` holds 2,521 trading days of **synthetic** prices: a computer generated them to behave like a real share, so everyone sees the same numbers. Each row has a `date` and a closing price, `close`.\n",
+        "\n",
+        "The data file was downloaded in Step 1 at the top of the notebook. If you see a ❌ there, rerun that cell."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "de1b3025",
+      "metadata": {
+        "id": "de1b3025"
+      },
+      "outputs": [],
+      "source": [
+        "# Worked example: read the CSV into a table, called a DataFrame.\n",
+        "data = pd.read_csv(\"week2_prices.csv\")\n",
+        "print(\"Rows:\", len(data))\n",
+        "data.head()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "d5da23ee",
+      "metadata": {
+        "id": "d5da23ee"
+      },
+      "source": [
+        "`data[\"close\"]` picks out one column. A single column is called a **Series**: a list of values with a label for each row."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "396071e3",
+      "metadata": {
+        "id": "396071e3"
+      },
+      "source": [
+        "### Exercise 6: Pick out the closing prices\n",
+        "\n",
+        "Store the `close` column of `data` in `prices`. Then store the **last** closing price in `last_price`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "`prices = data[\"close\"]`. A Series uses `.iloc[-1]` for the last item: `prices.iloc[-1]`.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "3321d08c",
+      "metadata": {
+        "id": "3321d08c"
+      },
+      "outputs": [],
+      "source": [
+        "# Exercise 6: replace None with your code.\n",
+        "prices = None\n",
+        "last_price = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "_ref_prices = pd.read_csv(\"week2_prices.csv\")[\"close\"]\n",
+        "if prices is None or last_price is None:\n",
+        "    check(\"Exercise 6\", False, \"Replace both blanks.\")\n",
+        "else:\n",
+        "    check(\"Exercise 6\", len(prices) == len(_ref_prices) and abs(last_price - _ref_prices.iloc[-1]) < 1e-9,\n",
+        "          \"Use data[\\\"close\\\"], then .iloc[-1] for the last value.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "20b5df41",
+      "metadata": {
+        "cellView": "form",
+        "id": "20b5df41"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution 6 (try the exercise first)\n",
+        "prices = data[\"close\"]\n",
+        "last_price = prices.iloc[-1]\n",
+        "last_price"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "73ba1032",
+      "metadata": {
+        "id": "73ba1032"
+      },
+      "outputs": [],
+      "source": [
+        "# Plot the prices. This works once Exercise 6 is done.\n",
+        "if prices is None:\n",
+        "    print(\"Finish Exercise 6 first, then run this cell again.\")\n",
+        "else:\n",
+        "    prices.plot(title=\"Synthetic price series\")\n",
+        "    plt.xlabel(\"Trading day\")\n",
+        "    plt.ylabel(\"Price\")\n",
+        "    plt.show()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "9244c504",
+      "metadata": {
+        "id": "9244c504"
+      },
+      "source": [
+        "## 7. Computing returns with pandas\n",
+        "\n",
+        "Section 3 computed returns with a loop. pandas does the whole series in one line:\n",
+        "\n",
+        "- `.pct_change()` computes today's price divided by yesterday's price, minus 1, for every row\n",
+        "- `.dropna()` removes the first row, which has no previous price and shows as `NaN` (not a number)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "e26f94a8",
+      "metadata": {
+        "id": "e26f94a8"
+      },
+      "source": [
+        "### Exercise 7: Daily returns of the full series\n",
+        "\n",
+        "Store the daily returns of `prices` in `returns`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "Start from `prices`, then call `.pct_change()` and `.dropna()`, joined with dots.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "b8b341fc",
+      "metadata": {
+        "id": "b8b341fc"
+      },
+      "outputs": [],
+      "source": [
+        "# Exercise 7: replace None with your code.\n",
+        "returns = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "_ref_returns = _ref_prices.pct_change().dropna()\n",
+        "if returns is None:\n",
+        "    check(\"Exercise 7\", False, \"The blank is still None. Replace it with your code.\")\n",
+        "else:\n",
+        "    check(\"Exercise 7\", len(returns) == len(_ref_returns) and np.allclose(np.asarray(returns), _ref_returns),\n",
+        "          \"Try prices.pct_change().dropna().\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "31411e4a",
+      "metadata": {
+        "cellView": "form",
+        "id": "31411e4a"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution 7 (try the exercise first)\n",
+        "returns = prices.pct_change().dropna()\n",
+        "returns.head()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "1848aec5",
+      "metadata": {
+        "id": "1848aec5"
+      },
+      "outputs": [],
+      "source": [
+        "# Look at your returns. This works once Exercise 7 is done.\n",
+        "if returns is None:\n",
+        "    print(\"Finish Exercise 7 first, then run this cell again.\")\n",
+        "else:\n",
+        "    print(\"Number of returns:\", len(returns))\n",
+        "    print(\"Average daily return:\", round(returns.mean(), 6))\n",
+        "    print(\"Largest rise:\", round(returns.max(), 4), \" Largest fall:\", round(returns.min(), 4))\n",
+        "    returns.plot(title=\"Daily returns\", linewidth=0.6)\n",
+        "    plt.xlabel(\"Trading day\")\n",
+        "    plt.show()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "7fa5561a",
+      "metadata": {
+        "id": "7fa5561a"
+      },
+      "source": [
+        "### Exercise 8 (optional): Short written question\n",
+        "\n",
+        "Look at the returns chart. The price series moves smoothly, while the returns jump around zero. Which days do you think matter most to someone holding this share, and why?\n",
+        "\n",
+        "Write your answer here by double-clicking this cell:\n",
+        "\n",
+        "> *Your answer:*"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "82e0e2d1",
+      "metadata": {
+        "id": "82e0e2d1"
+      },
+      "source": [
+        "## Self-check\n",
+        "\n",
+        "Run the cell below. It re-checks every exercise and gives you a score. Week 3 assumes you can load a price series and compute its returns, so aim for 7 out of 7 before Friday."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "23091d52",
+      "metadata": {
+        "id": "23091d52"
+      },
+      "outputs": [],
+      "source": [
+        "# Self-check: run this cell. No need to change it.\n",
+        "def _safe(test):\n",
+        "    try:\n",
+        "        return bool(test())\n",
+        "    except Exception:\n",
+        "        return False\n",
+        "\n",
+        "_results = {\n",
+        "    \"1. Variables\": _safe(lambda: abs(ret - 0.03) < 1e-9),\n",
+        "    \"2. Lists and dictionaries\": _safe(lambda: third_price == 99.99 and tsla_shares == 2),\n",
+        "    \"3. Loops and conditionals\": _safe(lambda: len(returns_list) == 3 and up_days == 2),\n",
+        "    \"4. Functions\": _safe(lambda: abs(simple_return(103, 100) - 0.03) < 1e-9),\n",
+        "    \"5. Libraries\": _safe(lambda: abs(annual_vol - 0.01 * 252 ** 0.5) < 1e-9),\n",
+        "    \"6. Loading data\": _safe(lambda: len(prices) == len(_ref_prices)),\n",
+        "    \"7. Returns\": _safe(lambda: np.allclose(np.asarray(returns), _ref_returns)),\n",
+        "}\n",
+        "for name, ok in _results.items():\n",
+        "    print(\"✅\" if ok else \"❌\", name)\n",
+        "score = sum(_results.values())\n",
+        "print(f\"\\nScore: {score} out of {len(_results)}\")\n",
+        "if score == len(_results):\n",
+        "    print(\"You are ready for Week 3.\")\n",
+        "else:\n",
+        "    print(\"Go back to the sections marked ❌ and rerun them.\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "c6915fca",
+      "metadata": {
+        "id": "c6915fca"
+      },
+      "source": [
+        "## Challenge\n",
+        "\n",
+        "These three problems combine everything from today with less guidance. Each has a check and a hidden solution. They are harder than the exercises, so take your time."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "c96c14dc",
+      "metadata": {
+        "id": "c96c14dc"
+      },
+      "source": [
+        "### Challenge 1: Total return, two ways\n",
+        "\n",
+        "The total return over the whole series is the last price divided by the first, minus 1. The same number comes from **compounding** the daily returns: multiply together every `(1 + r)` and subtract 1.\n",
+        "\n",
+        "Store the first version in `total_direct` and the compounded version in `total_compound`. They should match.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "`prices.iloc[-1] / prices.iloc[0] - 1`. For the second, `(1 + returns).prod() - 1`, where `.prod()` multiplies every value in a Series.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "b9ccd17f",
+      "metadata": {
+        "id": "b9ccd17f"
+      },
+      "outputs": [],
+      "source": [
+        "# Challenge 1: replace None with your code.\n",
+        "total_direct = None\n",
+        "total_compound = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "_ref_total = _ref_prices.iloc[-1] / _ref_prices.iloc[0] - 1\n",
+        "if total_direct is None or total_compound is None:\n",
+        "    check(\"Challenge 1\", False, \"Replace both blanks.\")\n",
+        "else:\n",
+        "    check(\"Challenge 1\", abs(total_direct - _ref_total) < 1e-9 and abs(total_compound - _ref_total) < 1e-9,\n",
+        "          \"Both numbers should equal the last price over the first, minus 1.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "9d0cb102",
+      "metadata": {
+        "cellView": "form",
+        "id": "9d0cb102"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution C1 (try the exercise first)\n",
+        "total_direct = prices.iloc[-1] / prices.iloc[0] - 1\n",
+        "total_compound = (1 + returns).prod() - 1\n",
+        "print(f\"Direct: {total_direct:.6f}   Compounded: {total_compound:.6f}\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "ad5cd173",
+      "metadata": {
+        "id": "ad5cd173"
+      },
+      "source": [
+        "### Challenge 2: Longest winning streak\n",
+        "\n",
+        "Write a function `longest_streak(rets)` that returns the largest number of **consecutive** days with a return above zero.\n",
+        "\n",
+        "Test it on `[0.01, 0.02, -0.01, 0.03, 0.01, 0.02, 0.0]`, which has a longest streak of 3, then run it on your `returns`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "Keep two counters: `current` and `best`. Loop over the returns. When a return is above zero, add 1 to `current`; otherwise reset `current` to 0. After each step, set `best = max(best, current)`.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "2959f92c",
+      "metadata": {
+        "id": "2959f92c"
+      },
+      "outputs": [],
+      "source": [
+        "# Challenge 2: replace None with your code.\n",
+        "longest_streak = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "def _ref_streak(rets):\n",
+        "    best = current = 0\n",
+        "    for r in rets:\n",
+        "        current = current + 1 if r > 0 else 0\n",
+        "        best = max(best, current)\n",
+        "    return best\n",
+        "if longest_streak is None:\n",
+        "    check(\"Challenge 2\", False, \"Replace the blank with a def block.\")\n",
+        "else:\n",
+        "    check(\"Challenge 2\", longest_streak([0.01, 0.02, -0.01, 0.03, 0.01, 0.02, 0.0]) == 3\n",
+        "          and longest_streak(list(_ref_returns)) == _ref_streak(_ref_returns),\n",
+        "          \"Reset the counter to 0 on any return that is not above zero.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "c54b8e77",
+      "metadata": {
+        "cellView": "form",
+        "id": "c54b8e77"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution C2 (try the exercise first)\n",
+        "def longest_streak(rets):\n",
+        "    best = 0\n",
+        "    current = 0\n",
+        "    for r in rets:\n",
+        "        if r > 0:\n",
+        "            current = current + 1\n",
+        "        else:\n",
+        "            current = 0\n",
+        "        best = max(best, current)\n",
+        "    return best\n",
+        "print(\"Longest winning streak:\", longest_streak(returns), \"days\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "3640b731",
+      "metadata": {
+        "id": "3640b731"
+      },
+      "source": [
+        "### Challenge 3: Best and worst year\n",
+        "\n",
+        "Build a dictionary `yearly` whose keys are years (2016, 2017, and so on) and whose values are that year's return: the last close of the year divided by the first close of the year, minus 1.\n",
+        "\n",
+        "Then store the year with the highest return in `best_year`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "`data[\"date\"].str[:4]` gives the year of each row as text. Loop over the unique years, select that year's rows with `data[data[\"date\"].str[:4] == year][\"close\"]`, and compute the return from its first and last values. `max(yearly, key=yearly.get)` returns the key with the largest value.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "c268cdc4",
+      "metadata": {
+        "id": "c268cdc4"
+      },
+      "outputs": [],
+      "source": [
+        "# Challenge 3: replace None with your code.\n",
+        "yearly = None\n",
+        "best_year = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "_d = pd.read_csv(\"week2_prices.csv\"); _y = _d[\"date\"].str[:4].astype(int)\n",
+        "_ref_yearly = {y: g.iloc[-1] / g.iloc[0] - 1 for y, g in _d[\"close\"].groupby(_y)}\n",
+        "if yearly is None or best_year is None:\n",
+        "    check(\"Challenge 3\", False, \"Replace both blanks.\")\n",
+        "else:\n",
+        "    _ok = len(yearly) == len(_ref_yearly) and all(abs(yearly.get(y, yearly.get(str(y), 99)) - v) < 1e-9 for y, v in _ref_yearly.items())\n",
+        "    check(\"Challenge 3\", _ok and int(best_year) == max(_ref_yearly, key=_ref_yearly.get),\n",
+        "          \"Each value is that year's last close over its first close, minus 1.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "73dc382e",
+      "metadata": {
+        "cellView": "form",
+        "id": "73dc382e"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution C3 (try the exercise first)\n",
+        "yearly = {}\n",
+        "for year in data[\"date\"].str[:4].unique():\n",
+        "    closes = data[data[\"date\"].str[:4] == year][\"close\"]\n",
+        "    yearly[int(year)] = closes.iloc[-1] / closes.iloc[0] - 1\n",
+        "best_year = max(yearly, key=yearly.get)\n",
+        "for y, r in yearly.items():\n",
+        "    print(y, f\"{r * 100:6.2f}%\")\n",
+        "print(\"Best year:\", best_year)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "18eb7b2d",
+      "metadata": {
+        "id": "18eb7b2d"
+      },
+      "source": [
+        "## Extension: numpy vectorisation and pandas idioms\n",
+        "\n",
+        "This section is for members who already code or want to go further. Work on it independently and bring questions to the supported working time. For further reading, see [10 minutes to pandas](https://pandas.pydata.org/docs/user_guide/10min.html) and [NumPy: the absolute basics for beginners](https://numpy.org/doc/stable/user/absolute_beginners.html).\n",
+        "\n",
+        "**Vectorisation** means applying one operation to a whole array at once. numpy runs the loop in compiled code, which is much faster than a Python loop, and the code reads closer to the maths.\n",
+        "\n",
+        "If `p` is a numpy array of prices, `p[1:]` is every price from the second onwards and `p[:-1]` is every price up to the second to last. Dividing them element by element gives every return in one line."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "aa87c84f",
+      "metadata": {
+        "id": "aa87c84f"
+      },
+      "outputs": [],
+      "source": [
+        "# Worked example: time a Python loop against a vectorised calculation on a million prices.\n",
+        "import time\n",
+        "p = 100 * np.exp(np.cumsum(np.random.default_rng(1).normal(0, 0.01, 1_000_000)))\n",
+        "\n",
+        "start = time.perf_counter()\n",
+        "loop_returns = [p[i] / p[i - 1] - 1 for i in range(1, len(p))]\n",
+        "loop_time = time.perf_counter() - start\n",
+        "\n",
+        "start = time.perf_counter()\n",
+        "vec_returns = p[1:] / p[:-1] - 1\n",
+        "vec_time = time.perf_counter() - start\n",
+        "\n",
+        "print(f\"Loop: {loop_time:.3f} s   Vectorised: {vec_time:.4f} s   Speed-up: {loop_time / vec_time:.0f}x\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "b270161a",
+      "metadata": {
+        "id": "b270161a"
+      },
+      "source": [
+        "### Extension 1: Vectorised returns\n",
+        "\n",
+        "Convert `prices` to a numpy array with `prices.to_numpy()`, then compute every daily return with slicing. Store the result in `vec`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "`a = prices.to_numpy()` then `vec = a[1:] / a[:-1] - 1`.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "6cad4f20",
+      "metadata": {
+        "id": "6cad4f20"
+      },
+      "outputs": [],
+      "source": [
+        "# Extension 1: replace None with your code.\n",
+        "vec = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "if vec is None:\n",
+        "    check(\"Extension 1\", False, \"The blank is still None. Replace it with your code.\")\n",
+        "else:\n",
+        "    check(\"Extension 1\", np.allclose(vec, _ref_returns.to_numpy()),\n",
+        "          \"Divide a[1:] by a[:-1], then subtract 1.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "42286734",
+      "metadata": {
+        "cellView": "form",
+        "id": "42286734"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution E1 (try the exercise first)\n",
+        "a = prices.to_numpy()\n",
+        "vec = a[1:] / a[:-1] - 1\n",
+        "vec[:5]"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "37d061a4",
+      "metadata": {
+        "id": "37d061a4"
+      },
+      "source": [
+        "**pandas idioms.** Reading the `date` column as the index lets you select by date. `parse_dates=True` turns the text into real dates, and `.loc[\"2020\"]` selects every row in 2020."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "98d97a90",
+      "metadata": {
+        "id": "98d97a90"
+      },
+      "outputs": [],
+      "source": [
+        "# Worked example: a date index.\n",
+        "dated = pd.read_csv(\"week2_prices.csv\", index_col=\"date\", parse_dates=True)[\"close\"]\n",
+        "dated.loc[\"2020-03\"].head()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "01c6b457",
+      "metadata": {
+        "id": "01c6b457"
+      },
+      "source": [
+        "### Extension 2: Average daily return in 2020\n",
+        "\n",
+        "Using `dated`, compute the daily returns for the whole series, then store the **average daily return in 2020** in `avg_2020`.\n",
+        "\n",
+        "<details>\n",
+        "<summary><b>Hint</b></summary>\n",
+        "\n",
+        "`dated.pct_change().dropna().loc[\"2020\"].mean()`. Methods chain left to right, each acting on the result of the one before.\n",
+        "</details>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "0b682d43",
+      "metadata": {
+        "id": "0b682d43"
+      },
+      "outputs": [],
+      "source": [
+        "# Extension 2: replace None with your code.\n",
+        "avg_2020 = None\n",
+        "\n",
+        "# Check (do not change this part).\n",
+        "_ref_2020 = pd.read_csv(\"week2_prices.csv\", index_col=\"date\", parse_dates=True)[\"close\"].pct_change().dropna().loc[\"2020\"].mean()\n",
+        "if avg_2020 is None:\n",
+        "    check(\"Extension 2\", False, \"The blank is still None. Replace it with your code.\")\n",
+        "else:\n",
+        "    check(\"Extension 2\", abs(avg_2020 - _ref_2020) < 1e-12,\n",
+        "          \"Compute returns first, then select 2020, then take the mean.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "15c25d6c",
+      "metadata": {
+        "cellView": "form",
+        "id": "15c25d6c"
+      },
+      "outputs": [],
+      "source": [
+        "#@title Solution E2 (try the exercise first)\n",
+        "avg_2020 = dated.pct_change().dropna().loc[\"2020\"].mean()\n",
+        "avg_2020"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "43b6c7ec",
+      "metadata": {
+        "id": "43b6c7ec"
+      },
+      "source": [
+        "## Common errors and what they mean\n",
+        "\n",
+        "| Message | What it usually means | What to do |\n",
+        "| --- | --- | --- |\n",
+        "| `NameError: name 'x' is not defined` | You used a name before creating it, or skipped an earlier cell | Run the cells above in order |\n",
+        "| `SyntaxError` | A bracket, quote, or colon is missing | Look at the line the arrow points to |\n",
+        "| `IndentationError` | The lines inside a loop or function are not lined up | Indent the body by four spaces |\n",
+        "| `IndexError: list index out of range` | You asked for a position past the end of a list | Remember that a list of 4 items ends at index 3 |\n",
+        "| `KeyError` | A column or dictionary key does not exist | Print the data and check the names and spelling |\n",
+        "| `FileNotFoundError` | Python cannot find the CSV file | Rerun Step 1 at the top of the notebook |\n",
+        "| `TypeError` or `AttributeError` | The thing you called does not support that action | Check the spelling and the dots in your code |\n",
+        "| Nothing happens | The cell did not run | Click the play button, or press Shift + Enter |\n",
+        "\n",
+        "Reading the **last line** of an error message is the fastest way to find the problem."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "26d80d55",
+      "metadata": {
+        "id": "26d80d55"
+      },
+      "source": [
+        "## Wrap up\n",
+        "\n",
+        "**What you did today:** wrote your first Python and turned a price series into daily returns.\n",
+        "\n",
+        "**Where to go next:** Week 3, returns, volatility, and distributions. The session opens with a ten-minute recap of this notebook, then describes your returns statistically.\n",
+        "\n",
+        "**Questions?** Ask a committee member in the session, or post in the society WhatsApp community.\n",
+        "\n",
+        "**Feedback:** https://forms.gle/nJ67syjrBe8LNqKRA"
+      ]
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
